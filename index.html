@@ -95,7 +95,67 @@
             box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
         }
 
-        /* Custom Cards & Pills */
+        /* Desain Simbol & Badge Role Header */
+        .role-badge-custom {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            max-width: 110px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            letter-spacing: 0.3px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .role-badge-guru {
+            background: linear-gradient(135deg, #ffffff, #f1f5f9);
+            color: #2563eb !important;
+        }
+        .role-badge-sarpras {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #b45309 !important;
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        .role-badge-admin {
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+            color: #0369a1 !important;
+            border-color: rgba(14, 165, 233, 0.3);
+        }
+
+        /* Simbol Ikon Berwarna Modern */
+        .section-title-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        .icon-box-blue {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+        .icon-box-amber {
+            background-color: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        .icon-box-indigo {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            border: 1px solid #c7d2fe;
+        }
+
+        /* Custom Cards & Pills Navigasi */
         .card-custom {
             border: 1px solid var(--card-border);
             border-radius: 16px;
@@ -105,25 +165,43 @@
         .stat-card {
             border-left: 5px solid var(--primary-blue) !important;
         }
+
         .nav-pills-custom {
             background: #ffffff;
             border: 1px solid var(--card-border);
+            padding: 4px !important;
+            gap: 4px;
         }
         .nav-pills-custom .nav-link {
             color: #64748b;
             border-radius: 10px;
             font-weight: 600;
-            padding: 8px 12px;
-            font-size: 0.85rem;
-            transition: all 0.2s;
+            padding: 8px 10px;
+            font-size: 0.825rem;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .nav-pills-custom .nav-link i {
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+        .nav-pills-custom .nav-link:hover {
+            color: var(--primary-blue);
+            background-color: #f1f5f9;
         }
         .nav-pills-custom .nav-link.active {
-            background-color: var(--primary-blue);
-            color: white;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
         }
 
-        /* Thumbnails & Mobile Bottom Nav */
+        /* Mobile Bottom Nav */
         .img-thumb-mobile {
             width: 75px;
             height: 75px;
@@ -137,31 +215,53 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
             border-top: 1px solid #e2e8f0;
             z-index: 1030;
             display: flex;
             justify-content: space-around;
-            padding: 6px 0 env(safe-area-inset-bottom);
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+            padding: 6px 4px env(safe-area-inset-bottom);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
         }
         .bottom-nav-item {
             text-align: center;
             color: #64748b;
-            font-size: 0.725rem;
+            font-size: 0.7rem;
             text-decoration: none;
             flex: 1;
-            padding: 4px 0;
-            font-weight: 500;
+            padding: 6px 2px;
+            font-weight: 600;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .bottom-nav-item i {
-            font-size: 1.15rem;
+            font-size: 1.2rem;
             display: block;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            transition: transform 0.2s ease;
+        }
+        .bottom-nav-item span {
+            display: block;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .bottom-nav-item.active {
             color: var(--primary-blue);
+            background: rgba(37, 99, 235, 0.08);
             font-weight: 700;
+        }
+        .bottom-nav-item.active i {
+            transform: translateY(-2px);
         }
 
         /* Tabel Detail Presisi Titik Dua (:) */
@@ -246,16 +346,18 @@
         <!-- Header Navbar -->
         <header class="app-header p-3 mb-3 sticky-top">
             <div class="container d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="logo-wrapper" onclick="triggerUploadLogo()" title="Klik untuk mengganti Logo Sekolah">
+                <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+                    <div class="logo-wrapper flex-shrink-0" onclick="triggerUploadLogo()" title="Klik untuk mengganti Logo Sekolah">
                         <img id="headerLogoImg" src="" class="logo-img-header" alt="Logo" onerror="this.src=DEFAULT_LOGO">
                     </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold leading-tight">SMPN 3 Besuki</h6>
-                        <span id="userRoleBadge" class="badge bg-white text-primary fw-bold mt-0.5">Guru</span>
+                    <div class="overflow-hidden">
+                        <h6 class="mb-0 fw-bold leading-tight text-truncate">SMPN 3 Besuki</h6>
+                        <span id="userRoleBadge" class="role-badge-custom role-badge-guru mt-0.5">
+                            <i class="fa-solid fa-user-shield"></i> Guru
+                        </span>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
                     <span id="syncStatus" class="badge bg-success bg-opacity-75 small"><i class="fa-solid fa-circle-check me-1"></i> Live</span>
                     <button class="btn btn-sm btn-outline-light fw-bold rounded-2 px-2.5" onclick="prosesLogout()" title="Keluar">
                         <i class="fa-solid fa-power-off"></i> <span class="d-none d-sm-inline ms-1">Keluar</span>
@@ -268,15 +370,15 @@
 
             <!-- ================= PANEL GURU ================= -->
             <div id="viewGuru" class="d-none">
-                <ul class="nav nav-pills nav-pills-custom mb-3 p-1 rounded-3 shadow-sm">
-                    <li class="nav-item flex-fill text-center">
+                <ul class="nav nav-pills nav-pills-custom mb-3 rounded-3 shadow-sm">
+                    <li class="nav-item flex-fill text-center overflow-hidden">
                         <button class="nav-link w-100 active" id="btnTabGuruLapor" onclick="switchGuruTab('lapor')">
-                            <i class="fa-solid fa-pen-to-square me-1"></i> Buat Laporan
+                            <i class="fa-solid fa-pen-to-square"></i> <span class="text-truncate">Buat Laporan</span>
                         </button>
                     </li>
-                    <li class="nav-item flex-fill text-center">
+                    <li class="nav-item flex-fill text-center overflow-hidden">
                         <button class="nav-link w-100" id="btnTabGuruRiwayat" onclick="switchGuruTab('riwayat')">
-                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Riwayat Saya
+                            <i class="fa-solid fa-clock-rotate-left"></i> <span class="text-truncate">Riwayat Saya</span>
                         </button>
                     </li>
                 </ul>
@@ -311,11 +413,11 @@
                             <div class="mb-3">
                                 <label class="form-label small fw-bold mb-1">Foto Bukti Kerusakan</label>
                                 <div class="d-flex gap-2 mb-2">
-                                    <button type="button" class="btn btn-sm btn-outline-primary flex-fill fw-bold rounded-2" onclick="openCameraGuru()">
-                                        <i class="fa-solid fa-camera me-1"></i> Ambil Foto Kamera
+                                    <button type="button" class="btn btn-sm btn-outline-primary flex-fill fw-bold rounded-2 text-truncate" onclick="openCameraGuru()">
+                                        <i class="fa-solid fa-camera me-1"></i> Kamera
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill fw-bold rounded-2" onclick="openFileGuru()">
-                                        <i class="fa-solid fa-folder-open me-1"></i> Pilih File Foto
+                                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill fw-bold rounded-2 text-truncate" onclick="openFileGuru()">
+                                        <i class="fa-solid fa-folder-open me-1"></i> Pilih File
                                     </button>
                                 </div>
                                 <input type="file" id="gFotoFile" class="d-none" accept="image/*" onchange="prosesFotoGuru(event)">
@@ -342,7 +444,10 @@
                 <!-- Riwayat Laporan Guru -->
                 <div id="guruTabRiwayat" class="d-none">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list-check me-2"></i>Riwayat & Tracking Laporan</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="section-title-icon icon-box-blue"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                            <h6 class="fw-bold mb-0 text-dark">Riwayat & Tracking Laporan</h6>
+                        </div>
                         <span class="badge bg-primary rounded-pill" id="totalLaporanGuru">0 Laporan</span>
                     </div>
                     <div id="listLaporanGuru" class="d-flex flex-column gap-2"></div>
@@ -351,18 +456,26 @@
 
             <!-- ================= PANEL PETUGAS SARPRAS ================= -->
             <div id="viewSarpras" class="d-none">
-                <ul class="nav nav-pills nav-pills-custom mb-3 p-1 rounded-3 shadow-sm d-none d-md-flex">
-                    <li class="nav-item">
-                        <button class="nav-link active" id="tabNavSOverview" onclick="switchSarprasTab('overview')"><i class="fa-solid fa-chart-pie me-1"></i>Overview</button>
+                <ul class="nav nav-pills nav-pills-custom mb-3 rounded-3 shadow-sm d-none d-md-flex">
+                    <li class="nav-item flex-fill text-center overflow-hidden">
+                        <button class="nav-link w-100 active" id="tabNavSOverview" onclick="switchSarprasTab('overview')">
+                            <i class="fa-solid fa-chart-pie"></i> <span class="text-truncate">Overview</span>
+                        </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tabNavSEvaluasi" onclick="switchSarprasTab('evaluasi')"><i class="fa-solid fa-clipboard-check me-1"></i>Evaluasi Baru</button>
+                    <li class="nav-item flex-fill text-center overflow-hidden">
+                        <button class="nav-link w-100" id="tabNavSEvaluasi" onclick="switchSarprasTab('evaluasi')">
+                            <i class="fa-solid fa-clipboard-check"></i> <span class="text-truncate">Evaluasi Baru</span>
+                        </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tabNavSProses" onclick="switchSarprasTab('proses')"><i class="fa-solid fa-screwdriver-wrench me-1"></i>Proses Perbaikan</button>
+                    <li class="nav-item flex-fill text-center overflow-hidden">
+                        <button class="nav-link w-100" id="tabNavSProses" onclick="switchSarprasTab('proses')">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> <span class="text-truncate">Proses Perbaikan</span>
+                        </button>
                     </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tabNavSInventaris" onclick="switchSarprasTab('inventaris')"><i class="fa-solid fa-boxes-stacked me-1"></i>Inventaris</button>
+                    <li class="nav-item flex-fill text-center overflow-hidden">
+                        <button class="nav-link w-100" id="tabNavSInventaris" onclick="switchSarprasTab('inventaris')">
+                            <i class="fa-solid fa-boxes-stacked"></i> <span class="text-truncate">Inventaris</span>
+                        </button>
                     </li>
                 </ul>
 
@@ -415,13 +528,19 @@
 
                 <!-- Evaluasi Laporan Masuk -->
                 <div id="sTabEvaluasi" class="d-none">
-                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-inbox me-2 text-warning"></i>1. Evaluasi Kategori Kerusakan</h6>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="section-title-icon icon-box-amber"><i class="fa-solid fa-clipboard-list"></i></span>
+                        <h6 class="fw-bold mb-0 text-dark">Evaluasi Kategori Kerusakan</h6>
+                    </div>
                     <div id="containerSarprasEvaluasi" class="d-flex flex-column gap-2"></div>
                 </div>
 
                 <!-- Proses Perbaikan -->
                 <div id="sTabProses" class="d-none">
-                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-screwdriver-wrench me-2 text-primary"></i>2. Hasil Verifikasi Admin & Proses Perbaikan</h6>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="section-title-icon icon-box-indigo"><i class="fa-solid fa-gears"></i></span>
+                        <h6 class="fw-bold mb-0 text-dark">Hasil Verifikasi Admin & Proses Perbaikan</h6>
+                    </div>
                     <div id="containerSarprasProses" class="d-flex flex-column gap-2"></div>
                 </div>
 
@@ -456,15 +575,15 @@
 
             <!-- ================= PANEL ADMIN / TIM BOS ================= -->
             <div id="viewAdmin" class="d-none">
-                <ul class="nav nav-pills nav-pills-custom mb-3 p-1 rounded-3 shadow-sm">
-                    <li class="nav-item flex-fill text-center">
+                <ul class="nav nav-pills nav-pills-custom mb-3 rounded-3 shadow-sm">
+                    <li class="nav-item flex-fill text-center overflow-hidden">
                         <button class="nav-link w-100 active" id="btnTabAdminPersetujuan" onclick="switchAdminTab('persetujuan')">
-                            <i class="fa-solid fa-file-signature me-1"></i> Verifikasi Anggaran
+                            <i class="fa-solid fa-file-signature"></i> <span class="text-truncate">Verifikasi Anggaran</span>
                         </button>
                     </li>
-                    <li class="nav-item flex-fill text-center">
+                    <li class="nav-item flex-fill text-center overflow-hidden">
                         <button class="nav-link w-100" id="btnTabAdminRekap" onclick="switchAdminTab('rekap')">
-                            <i class="fa-solid fa-chart-line me-1"></i> Rekapitulasi
+                            <i class="fa-solid fa-chart-line"></i> <span class="text-truncate">Rekapitulasi</span>
                         </button>
                     </li>
                 </ul>
@@ -517,16 +636,16 @@
         <!-- Mobile Bottom Nav Khusus Sarpras -->
         <div class="bottom-nav d-md-none d-none" id="mobileNavSarpras">
             <a href="#" class="bottom-nav-item active" id="mNavOverview" onclick="switchSarprasTab('overview')">
-                <i class="fa-solid fa-chart-pie"></i>Overview
+                <i class="fa-solid fa-chart-pie"></i><span>Overview</span>
             </a>
             <a href="#" class="bottom-nav-item" id="mNavEvaluasi" onclick="switchSarprasTab('evaluasi')">
-                <i class="fa-solid fa-clipboard-check"></i>Evaluasi
+                <i class="fa-solid fa-clipboard-check"></i><span>Evaluasi</span>
             </a>
             <a href="#" class="bottom-nav-item" id="mNavProses" onclick="switchSarprasTab('proses')">
-                <i class="fa-solid fa-screwdriver-wrench"></i>Proses
+                <i class="fa-solid fa-screwdriver-wrench"></i><span>Proses</span>
             </a>
             <a href="#" class="bottom-nav-item" id="mNavInventaris" onclick="switchSarprasTab('inventaris')">
-                <i class="fa-solid fa-boxes-stacked"></i>Inventaris
+                <i class="fa-solid fa-boxes-stacked"></i><span>Inventaris</span>
             </a>
         </div>
 
@@ -808,22 +927,23 @@
             document.getElementById('viewAdmin').classList.add('d-none');
             document.getElementById('mobileNavSarpras').classList.add('d-none');
 
-            // Pengaturan Label Role Singkat: Guru, Sarpras, Admin
+            // Pengaturan Label & Simbol Role Header
+            const roleBadge = document.getElementById('userRoleBadge');
             if (currentUser.role === 'guru') {
-                document.getElementById('userRoleBadge').innerText = 'Guru';
-                document.getElementById('userRoleBadge').className = 'badge bg-white text-primary fw-bold mt-0.5';
+                roleBadge.innerHTML = '<i class="fa-solid fa-chalkboard-user"></i> Guru';
+                roleBadge.className = 'role-badge-custom role-badge-guru mt-0.5';
                 document.getElementById('viewGuru').classList.remove('d-none');
                 document.getElementById('gNama').value = currentUser.nama;
                 switchGuruTab('lapor');
             } else if (currentUser.role === 'sarpras') {
-                document.getElementById('userRoleBadge').innerText = 'Sarpras';
-                document.getElementById('userRoleBadge').className = 'badge bg-warning text-dark fw-bold mt-0.5';
+                roleBadge.innerHTML = '<i class="fa-solid fa-boxes-packing"></i> Sarpras';
+                roleBadge.className = 'role-badge-custom role-badge-sarpras mt-0.5';
                 document.getElementById('viewSarpras').classList.remove('d-none');
                 document.getElementById('mobileNavSarpras').classList.remove('d-none');
                 switchSarprasTab('overview');
             } else if (currentUser.role === 'admin') {
-                document.getElementById('userRoleBadge').innerText = 'Admin';
-                document.getElementById('userRoleBadge').className = 'badge bg-info text-white fw-bold mt-0.5';
+                roleBadge.innerHTML = '<i class="fa-solid fa-user-gear"></i> Admin';
+                roleBadge.className = 'role-badge-custom role-badge-admin mt-0.5';
                 document.getElementById('viewAdmin').classList.remove('d-none');
                 switchAdminTab('persetujuan');
             }
