@@ -209,7 +209,7 @@
             <!-- Logo Sekolah Interaktif -->
             <div class="mb-3">
                 <div class="logo-wrapper" onclick="triggerUploadLogo()" title="Klik untuk mengganti Logo Sekolah">
-                    <img id="loginLogoImg" src="https://cdn-icons-png.flaticon.com/512/2991/2991106.png" class="logo-img-login" alt="Logo Sekolah">
+                    <img id="loginLogoImg" src="" class="logo-img-login" alt="Logo Sekolah" onerror="this.src=DEFAULT_LOGO">
                     <div class="logo-edit-badge"><i class="fa-solid fa-camera"></i></div>
                 </div>
             </div>
@@ -248,7 +248,7 @@
             <div class="container d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
                     <div class="logo-wrapper" onclick="triggerUploadLogo()" title="Klik untuk mengganti Logo Sekolah">
-                        <img id="headerLogoImg" src="https://cdn-icons-png.flaticon.com/512/2991/2991106.png" class="logo-img-header" alt="Logo">
+                        <img id="headerLogoImg" src="" class="logo-img-header" alt="Logo" onerror="this.src=DEFAULT_LOGO">
                     </div>
                     <div>
                         <h6 class="mb-0 fw-bold leading-tight">SMPN 3 Besuki</h6>
@@ -287,7 +287,7 @@
                         <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-plus-circle me-2"></i>Form Pelaporan Sarpras</h6>
                         <form id="formGuru" onsubmit="kirimLaporanGuru(event)">
                             <div class="mb-2">
-                                <label class="form-label small fw-bold mb-1">Nama Guru / Pelapor</label>
+                                <label class="form-label small fw-bold mb-1">Nama Guru</label>
                                 <input type="text" id="gNama" class="form-control form-control-sm rounded-2" required>
                             </div>
                             <div class="mb-2">
@@ -296,20 +296,42 @@
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small fw-bold mb-1">Aset / Sarpras Bermasalah</label>
-                                <input type="text" id="gAset" class="form-control form-control-sm rounded-2" placeholder="Contoh: AC Ruang Komputer / Atap Kelas 8B" required>
+                                <input type="text" id="gAset" class="form-control form-control-sm rounded-2" required>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small fw-bold mb-1">Lokasi Detail</label>
-                                <input type="text" id="gLokasi" class="form-control form-control-sm rounded-2" placeholder="Contoh: Gedung Timur Lantai 2" required>
+                                <input type="text" id="gLokasi" class="form-control form-control-sm rounded-2" required>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small fw-bold mb-1">Deskripsi Kerusakan</label>
-                                <textarea id="gDeskripsi" class="form-control form-control-sm rounded-2" rows="3" placeholder="Jelaskan detail kondisi kerusakan..." required></textarea>
+                                <textarea id="gDeskripsi" class="form-control form-control-sm rounded-2" rows="3" required></textarea>
                             </div>
+                            
+                            <!-- Foto Bukti Kerusakan (Kamera Langsung atau Pilih File) -->
                             <div class="mb-3">
                                 <label class="form-label small fw-bold mb-1">Foto Bukti Kerusakan</label>
-                                <input type="file" id="gFoto" class="form-control form-control-sm rounded-2" accept="image/*" required>
+                                <div class="d-flex gap-2 mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary flex-fill fw-bold rounded-2" onclick="openCameraGuru()">
+                                        <i class="fa-solid fa-camera me-1"></i> Ambil Foto Kamera
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill fw-bold rounded-2" onclick="openFileGuru()">
+                                        <i class="fa-solid fa-folder-open me-1"></i> Pilih File Foto
+                                    </button>
+                                </div>
+                                <input type="file" id="gFotoFile" class="d-none" accept="image/*" onchange="prosesFotoGuru(event)">
+                                <input type="file" id="gFotoCamera" class="d-none" accept="image/*" capture="environment" onchange="prosesFotoGuru(event)">
+                                
+                                <div id="previewFotoBox" class="d-none text-center p-2 border rounded-2 bg-light mt-2">
+                                    <img id="previewFotoImg" src="" class="img-fluid rounded mb-2" style="max-height: 180px; object-fit: contain;">
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 rounded-2 fw-bold" onclick="resetFotoGuru()">
+                                            <i class="fa-solid fa-trash me-1"></i> Hapus & Ganti Foto
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="gFotoData">
                             </div>
+
                             <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold py-2 rounded-2">
                                 <i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan ke Sarpras
                             </button>
@@ -510,6 +532,28 @@
 
     </div>
 
+    <!-- Modal Kamera WebCam (Desktop/Laptop) -->
+    <div class="modal fade" id="modalKamera" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered px-2">
+            <div class="modal-content rounded-3 border-0 shadow">
+                <div class="modal-header bg-primary text-white py-2">
+                    <h6 class="modal-title fw-bold"><i class="fa-solid fa-camera me-2"></i>Ambil Foto Bukti Kerusakan</h6>
+                    <button type="button" class="btn-close btn-close-white" onclick="tutupModalKamera()"></button>
+                </div>
+                <div class="modal-body p-3 text-center bg-black rounded-bottom">
+                    <video id="webcamVideo" autoplay playsinline class="w-100 rounded border border-secondary" style="max-height: 280px; object-fit: cover;"></video>
+                    <canvas id="webcamCanvas" class="d-none"></canvas>
+                </div>
+                <div class="modal-footer p-2 d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-secondary fw-bold rounded-2" onclick="tutupModalKamera()">Batal</button>
+                    <button type="button" class="btn btn-sm btn-primary fw-bold rounded-2" onclick="jepretKamera()">
+                        <i class="fa-solid fa-circle-dot me-1"></i> Jepret Foto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Tambah Inventaris -->
     <div class="modal fade" id="modalTambahInv" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered px-2">
@@ -522,11 +566,11 @@
                     <div class="modal-body p-3">
                         <div class="mb-2">
                             <label class="form-label small fw-bold mb-1">Kode Barang / Gedung</label>
-                            <input type="text" id="iKode" class="form-control form-control-sm rounded-2" placeholder="Contoh: GDG-01 / ALT-02" required>
+                            <input type="text" id="iKode" class="form-control form-control-sm rounded-2" required>
                         </div>
                         <div class="mb-2">
                             <label class="form-label small fw-bold mb-1">Nama Gedung / Alat</label>
-                            <input type="text" id="iNama" class="form-control form-control-sm rounded-2" placeholder="Contoh: Proyektor Epson" required>
+                            <input type="text" id="iNama" class="form-control form-control-sm rounded-2" required>
                         </div>
                         <div class="mb-2">
                             <label class="form-label small fw-bold mb-1">Kategori</label>
@@ -537,7 +581,7 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label small fw-bold mb-1">Lokasi</label>
-                            <input type="text" id="iLokasi" class="form-control form-control-sm rounded-2" placeholder="Contoh: Ruang Lab IPA" required>
+                            <input type="text" id="iLokasi" class="form-control form-control-sm rounded-2" required>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
@@ -570,52 +614,100 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const initialLaporan = [
-            {
-                id: "LAP-101",
-                usernamePelapor: "guru",
-                pelapor: "Drs. Ahmad Supriyadi",
-                tanggal: "2026-10-10",
-                aset: "Proyektor Epson EB-X400",
-                lokasi: "Ruang Kelas 8A",
-                deskripsi: "Proyektor tiba-tiba mati sendiri dan indikator berkedip merah.",
-                foto: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=300",
-                tingkatKerusakan: "Ringan",
-                status: "Diproses",
-                catatanSarpras: "Lampu proyektor perlu diganti.",
-                sumberAnggaran: "Bendahara Sarpras",
-                bulanPelaksanaan: "Oktober",
-                tahunPelaksanaan: "2026",
-                catatanAdmin: "Disetujui menggunakan anggaran operasional Bendahara Sarpras bulan Oktober 2026."
-            },
-            {
-                id: "LAP-102",
-                usernamePelapor: "guru",
-                pelapor: "Siti Nurhaliza, S.Pd.",
-                tanggal: "2026-10-11",
-                aset: "Atap & Plafon Ruang Lab IPA",
-                lokasi: "Gedung Barat Lantai 2",
-                deskripsi: "Plafon ambrol parah akibat kebocoran atap saat hujan deras.",
-                foto: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300",
-                tingkatKerusakan: "Berat",
-                status: "Menunggu Verifikasi Admin",
-                catatanSarpras: "Kerusakan struktur atap cukup parah, membutuhkan renovasi total.",
-                sumberAnggaran: "",
-                bulanPelaksanaan: "",
-                tahunPelaksanaan: "",
-                catatanAdmin: ""
-            }
-        ];
-
-        const initialInventaris = [
-            { id: "INV-01", kode: "GDG-01", nama: "Ruang Kelas 8A", kategori: "Gedung", lokasi: "Lantai 2 Utama", jumlah: 1, tahun: 2026, kondisi: "Baik" },
-            { id: "INV-02", kode: "ALT-01", nama: "Proyektor Epson EB-X400", kategori: "Alat", lokasi: "Ruang Kelas 8A", jumlah: 1, tahun: 2026, kondisi: "Rusak Ringan" }
-        ];
+        const initialLaporan = [];
+        const initialInventaris = [];
 
         let currentUser = null;
         let storeLaporan = [];
         let storeInventaris = [];
-        const DEFAULT_LOGO = "https://cdn-icons-png.flaticon.com/512/2991/2991106.png";
+        let webcamStream = null;
+        
+        // Logo SVG Embedded (100% Permanen di Seluruh Perangkat/HP tanpa ketergantungan link luar)
+        const DEFAULT_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%232563eb' d='M256 32L32 128v64c0 141.4 96 264.8 224 288 128-23.2 224-146.6 224-288v-64L256 32z'/><path fill='%23ffffff' d='M256 128l-80 48v32l80-48 80 48v-32l-80-48zm-80 112v80h160v-80H176zm32 32h96v32h-96v-32z'/></svg>";
+
+        // ================= FOTO KAMERA LANGSUNG / FILE =================
+        function openCameraGuru() {
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                document.getElementById('gFotoCamera').click();
+            } else {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    bukaModalKamera();
+                } else {
+                    document.getElementById('gFotoCamera').click();
+                }
+            }
+        }
+
+        function openFileGuru() {
+            document.getElementById('gFotoFile').click();
+        }
+
+        function prosesFotoGuru(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                setPreviewFotoGuru(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setPreviewFotoGuru(base64Data) {
+            document.getElementById('gFotoData').value = base64Data;
+            document.getElementById('previewFotoImg').src = base64Data;
+            document.getElementById('previewFotoBox').classList.remove('d-none');
+        }
+
+        function resetFotoGuru() {
+            document.getElementById('gFotoData').value = '';
+            document.getElementById('gFotoFile').value = '';
+            document.getElementById('gFotoCamera').value = '';
+            document.getElementById('previewFotoImg').src = '';
+            document.getElementById('previewFotoBox').classList.add('d-none');
+        }
+
+        function bukaModalKamera() {
+            const modalEl = document.getElementById('modalKamera');
+            const bsModal = new bootstrap.Modal(modalEl);
+            bsModal.show();
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function(stream) {
+                    webcamStream = stream;
+                    const video = document.getElementById('webcamVideo');
+                    video.srcObject = stream;
+                })
+                .catch(function(err) {
+                    alert('Tidak dapat mengakses kamera: ' + err.message + '\nDialihkan ke pemilih file foto.');
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    document.getElementById('gFotoFile').click();
+                });
+        }
+
+        function tutupModalKamera() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            const modalEl = document.getElementById('modalKamera');
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+        }
+
+        function jepretKamera() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('webcamCanvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+            setPreviewFotoGuru(base64Data);
+            tutupModalKamera();
+        }
 
         // ================= MANAJEMEN LOGO PERMANEN =================
         function triggerUploadLogo() {
@@ -638,19 +730,21 @@
 
         function terapkanLogo(urlLogo) {
             const logoUrl = urlLogo || localStorage.getItem('smpn3_logo_sekolah') || DEFAULT_LOGO;
-            document.getElementById('loginLogoImg').src = logoUrl;
-            document.getElementById('headerLogoImg').src = logoUrl;
+            const imgLogin = document.getElementById('loginLogoImg');
+            const imgHeader = document.getElementById('headerLogoImg');
+            if (imgLogin) imgLogin.src = logoUrl;
+            if (imgHeader) imgHeader.src = logoUrl;
         }
 
         // ================= STORAGE & SESSION =================
         function loadStorage() {
-            storeLaporan = JSON.parse(localStorage.getItem('smpn3_laporan_v6')) || initialLaporan;
-            storeInventaris = JSON.parse(localStorage.getItem('smpn3_inventaris_v6')) || initialInventaris;
+            storeLaporan = JSON.parse(localStorage.getItem('smpn3_laporan_v7')) || initialLaporan;
+            storeInventaris = JSON.parse(localStorage.getItem('smpn3_inventaris_v7')) || initialInventaris;
         }
 
         function saveStorage() {
-            localStorage.setItem('smpn3_laporan_v6', JSON.stringify(storeLaporan));
-            localStorage.setItem('smpn3_inventaris_v6', JSON.stringify(storeInventaris));
+            localStorage.setItem('smpn3_laporan_v7', JSON.stringify(storeLaporan));
+            localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(storeInventaris));
             renderSemua();
         }
 
@@ -665,7 +759,7 @@
             terapkanLogo();
             document.getElementById('gTgl').valueAsDate = new Date();
             
-            const savedSession = sessionStorage.getItem('smpn3_user_session_v6');
+            const savedSession = sessionStorage.getItem('smpn3_user_session_v7');
             if (savedSession) {
                 currentUser = JSON.parse(savedSession);
                 bukaMainApp();
@@ -680,7 +774,7 @@
             const alertBox = document.getElementById('alertLogin');
 
             if (u === 'guru' && p === 'guru123') {
-                currentUser = { role: 'guru', username: 'guru', nama: 'Guru SMPN 3 Besuki' };
+                currentUser = { role: 'guru', username: 'guru', nama: '' };
             } else if (u === 'sarpras' && p === 'sarpras123') {
                 currentUser = { role: 'sarpras', username: 'sarpras', nama: 'Petugas Sarpras' };
             } else if (u === 'admin' && p === 'admin123') {
@@ -692,12 +786,12 @@
             }
 
             alertBox.classList.add('d-none');
-            sessionStorage.setItem('smpn3_user_session_v6', JSON.stringify(currentUser));
+            sessionStorage.setItem('smpn3_user_session_v7', JSON.stringify(currentUser));
             bukaMainApp();
         }
 
         function prosesLogout() {
-            sessionStorage.removeItem('smpn3_user_session_v6');
+            sessionStorage.removeItem('smpn3_user_session_v7');
             currentUser = null;
             document.getElementById('viewMainApp').classList.add('d-none');
             document.getElementById('viewLogin').classList.remove('d-none');
@@ -760,40 +854,40 @@
 
         function kirimLaporanGuru(e) {
             e.preventDefault();
-            const fileFoto = document.getElementById('gFoto').files[0];
-            if (!fileFoto) return;
+            const fotoData = document.getElementById('gFotoData').value;
+            if (!fotoData) {
+                alert('Harap sertakan foto bukti kerusakan!');
+                return;
+            }
 
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const itemBaru = {
-                    id: "LAP-" + Date.now(),
-                    usernamePelapor: currentUser.username,
-                    pelapor: document.getElementById('gNama').value,
-                    tanggal: document.getElementById('gTgl').value,
-                    aset: document.getElementById('gAset').value,
-                    lokasi: document.getElementById('gLokasi').value,
-                    deskripsi: document.getElementById('gDeskripsi').value,
-                    foto: evt.target.result,
-                    tingkatKerusakan: "Belum Dievaluasi",
-                    status: 'Menunggu Sarpras',
-                    catatanSarpras: 'Laporan baru terkirim, menunggu pemeriksaan Sarpras.',
-                    sumberAnggaran: "",
-                    bulanPelaksanaan: "",
-                    tahunPelaksanaan: "",
-                    catatanAdmin: ""
-                };
-
-                storeLaporan.unshift(itemBaru);
-                saveStorage();
-                
-                document.getElementById('formGuru').reset();
-                document.getElementById('gNama').value = currentUser.nama;
-                document.getElementById('gTgl').valueAsDate = new Date();
-                
-                alert('Laporan berhasil dikirim ke Bagian Sarpras!');
-                switchGuruTab('riwayat');
+            const itemBaru = {
+                id: "LAP-" + Date.now(),
+                usernamePelapor: currentUser.username,
+                pelapor: document.getElementById('gNama').value,
+                tanggal: document.getElementById('gTgl').value,
+                aset: document.getElementById('gAset').value,
+                lokasi: document.getElementById('gLokasi').value,
+                deskripsi: document.getElementById('gDeskripsi').value,
+                foto: fotoData,
+                tingkatKerusakan: "Belum Dievaluasi",
+                status: 'Menunggu Sarpras',
+                catatanSarpras: 'Laporan baru terkirim, menunggu pemeriksaan Sarpras.',
+                sumberAnggaran: "",
+                bulanPelaksanaan: "",
+                tahunPelaksanaan: "",
+                catatanAdmin: ""
             };
-            reader.readAsDataURL(fileFoto);
+
+            storeLaporan.unshift(itemBaru);
+            saveStorage();
+            
+            document.getElementById('formGuru').reset();
+            resetFotoGuru();
+            document.getElementById('gNama').value = currentUser.nama;
+            document.getElementById('gTgl').valueAsDate = new Date();
+            
+            alert('Laporan berhasil dikirim ke Bagian Sarpras!');
+            switchGuruTab('riwayat');
         }
 
         function renderGuruData() {
@@ -986,7 +1080,7 @@
                                     </div>
                                     <div class="col-md-8">
                                         <label class="form-label small fw-bold mb-1">Catatan & Rekomendasi Sarpras:</label>
-                                        <input type="text" id="cat-${item.id}" class="form-control form-control-sm rounded-2" placeholder="Rincian bagian yang perlu diganti/diperbaiki...">
+                                        <input type="text" id="cat-${item.id}" class="form-control form-control-sm rounded-2">
                                     </div>
                                 </div>
                                 <button class="btn btn-warning btn-sm w-100 fw-bold mt-2 text-dark rounded-2" onclick="kirimKeAdmin('${item.id}')">
@@ -1251,7 +1345,7 @@
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-bold mb-1">Catatan Keputusan Admin / Tim BOS:</label>
-                                        <input type="text" id="admCatatan-${item.id}" class="form-control form-control-sm rounded-2" placeholder="Catatan persetujuan..." value="${isBerat ? 'Disetujui dimasukkan ke perencanaan BOS Tahun Berikutnya.' : 'Disetujui dicairkan melalui anggaran Sarpras.'}">
+                                        <input type="text" id="admCatatan-${item.id}" class="form-control form-control-sm rounded-2">
                                     </div>
                                 </div>
                                 <button class="btn btn-success btn-sm w-100 fw-bold mt-2 py-2 rounded-2" onclick="prosesVerifikasiAdmin('${item.id}')">
