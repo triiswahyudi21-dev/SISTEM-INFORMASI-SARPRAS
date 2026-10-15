@@ -358,7 +358,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                    <span id="syncStatus" class="badge bg-success bg-opacity-75 small"><i class="fa-solid fa-circle-check me-1"></i> Live Realtime</span>
+                    <span id="syncStatus" class="badge bg-success bg-opacity-75 small"><i class="fa-solid fa-circle-check me-1"></i> Firebase Realtime</span>
                     <button class="btn btn-sm btn-outline-light fw-bold rounded-2 px-2.5" onclick="prosesLogout()" title="Keluar">
                         <i class="fa-solid fa-power-off"></i> <span class="d-none d-sm-inline ms-1">Keluar</span>
                     </button>
@@ -733,6 +733,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // Endpoint Firebase Realtime Cloud REST API
+        const FIREBASE_BASE_URL = "https://smpn3-besuki-sarpras-default-rtdb.firebaseio.com";
+
         const initialLaporan = [];
         const initialInventaris = [];
 
@@ -740,67 +743,78 @@
         window.storeLaporan = [];
         window.storeInventaris = [];
         let webcamStream = null;
-
-        // Endpoint Realtime Server Cloud yang Stabil & Cepat untuk Vercel
-        const JSONBIN_URL = "https://api.jsonbin.io/v3/b/65e89a30dc74654018afe980";
-        const JSONBIN_KEY = "$2a$10$7v59fW3WlHw7i.N.oWp6/.3wKGg8c93b6e792c011e";
+        let isSyncing = false;
         
         // Logo SVG Embedded (100% Permanen di Seluruh Perangkat/HP)
         const DEFAULT_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%232563eb' d='M256 32L32 128v64c0 141.4 96 264.8 224 288 128-23.2 224-146.6 224-288v-64L256 32z'/><path fill='%23ffffff' d='M256 128l-80 48v32l80-48 80 48v-32l-80-48zm-80 112v80h160v-80H176zm32 32h96v32h-96v-32z'/></svg>";
 
-        // MANAJEMEN PENYIMPANAN & SINKRONISASI ONLINE
+        // SINKRONISASI PUSH DATA KE FIREBASE REALTIME DB
         window.saveStorage = function() {
             localStorage.setItem('smpn3_laporan_v7', JSON.stringify(window.storeLaporan));
             localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(window.storeInventaris));
             renderSemua();
 
-            // Kirim Laporan ke Server Cloud
-            fetch(JSONBIN_URL, {
+            // Kirim langsung ke Cloud Firebase
+            fetch(`${FIREBASE_BASE_URL}/laporan_v7.json`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': JSONBIN_KEY
-                },
-                body: JSON.stringify({
-                    laporan: window.storeLaporan,
-                    inventaris: window.storeInventaris
-                })
-            }).catch(e => console.log('Offline save: ', e));
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(window.storeLaporan)
+            }).catch(err => console.log('Firebase Sync Warning: ', err));
+
+            fetch(`${FIREBASE_BASE_URL}/inventaris_v7.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(window.storeInventaris)
+            }).catch(err => console.log('Firebase Sync Warning: ', err));
         };
 
+        // FETCH REALTIME PULL DATA DARI FIREBASE REALTIME DB
         window.loadStorage = function() {
-            // Muat Data Lokal Terlebih Dahulu
-            window.storeLaporan = JSON.parse(localStorage.getItem('smpn3_laporan_v7')) || initialLaporan;
-            window.storeInventaris = JSON.parse(localStorage.getItem('smpn3_inventaris_v7')) || initialInventaris;
+            if (isSyncing) return;
+            isSyncing = true;
+
+            // Load Lokal Terlebih Dahulu
+            const localLaporan = localStorage.getItem('smpn3_laporan_v7');
+            const localInventaris = localStorage.getItem('smpn3_inventaris_v7');
+            if (localLaporan) window.storeLaporan = JSON.parse(localLaporan);
+            if (localInventaris) window.storeInventaris = JSON.parse(localInventaris);
             renderSemua();
 
-            // Muat & Sinkron Data Realtime dari Server Cloud
-            fetch(JSONBIN_URL, {
-                headers: { 'X-Master-Key': JSONBIN_KEY }
-            })
-            .then(res => res.json())
-            .then(resData => {
-                if (resData && resData.record) {
-                    if (resData.record.laporan) {
-                        window.storeLaporan = resData.record.laporan;
-                        localStorage.setItem('smpn3_laporan_v7', JSON.stringify(window.storeLaporan));
+            // Ambil update online dari Firebase
+            fetch(`${FIREBASE_BASE_URL}/.json`)
+                .then(res => res.json())
+                .then(data => {
+                    isSyncing = false;
+                    if (data) {
+                        if (data.laporan_v7) {
+                            const arrLaporan = Array.isArray(data.laporan_v7) ? data.laporan_v7 : Object.values(data.laporan_v7);
+                            window.storeLaporan = arrLaporan;
+                            localStorage.setItem('smpn3_laporan_v7', JSON.stringify(arrLaporan));
+                        }
+                        if (data.inventaris_v7) {
+                            const arrInventaris = Array.isArray(data.inventaris_v7) ? data.inventaris_v7 : Object.values(data.inventaris_v7);
+                            window.storeInventaris = arrInventaris;
+                            localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(arrInventaris));
+                        }
+                        if (data.logo_sekolah) {
+                            localStorage.setItem('smpn3_logo_sekolah', data.logo_sekolah);
+                            terapkanLogo(data.logo_sekolah);
+                        }
+                        renderSemua();
                     }
-                    if (resData.record.inventaris) {
-                        window.storeInventaris = resData.record.inventaris;
-                        localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(window.storeInventaris));
-                    }
-                    renderSemua();
-                }
-            })
-            .catch(e => console.log('Cloud sync error: ', e));
+                })
+                .catch(err => {
+                    isSyncing = false;
+                    console.log('Firebase Load Offline: ', err);
+                });
         };
 
-        // Otomatis sinkronkan antar-HP setiap 4 detik saat aplikasi dibuka
+        // SINKRONISASI OTOMATIS BERKALA DI LATAR BELAKANG (2.5 DETIK / INSTAN)
         setInterval(() => {
             if (currentUser) {
                 window.loadStorage();
             }
-        }, 4000);
+        }, 2500);
 
         // ================= FOTO KAMERA LANGSUNG / FILE =================
         function openCameraGuru() {
@@ -924,8 +938,13 @@
             reader.onload = function(e) {
                 kompresiFoto(e.target.result, 200, 0.7, function(logoCompressed) {
                     localStorage.setItem('smpn3_logo_sekolah', logoCompressed);
+                    fetch(`${FIREBASE_BASE_URL}/logo_sekolah.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(logoCompressed)
+                    });
                     terapkanLogo(logoCompressed);
-                    alert('Logo sekolah berhasil diperbarui secara permanen!');
+                    alert('Logo sekolah berhasil diperbarui secara permanen di seluruh perangkat!');
                 });
             };
             reader.readAsDataURL(file);
@@ -939,7 +958,7 @@
             if (imgHeader) imgHeader.src = logoUrl;
         }
 
-        // ================= SESSION =================
+        // ================= SESSION & INISIALISASI =================
         window.onload = function() {
             terapkanLogo();
             document.getElementById('gTgl').valueAsDate = new Date();
@@ -952,7 +971,7 @@
             }
         };
 
-        // ================= LOGIN & LOGOUT (MANDIRI & PASTI BISA) =================
+        // ================= LOGIN & LOGOUT (100% PASTI BISA) =================
         function prosesLogin(e) {
             e.preventDefault();
             const u = document.getElementById('loginUser').value.trim();
