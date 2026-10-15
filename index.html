@@ -358,7 +358,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                    <span id="syncStatus" class="badge bg-success bg-opacity-75 small"><i class="fa-solid fa-circle-check me-1"></i> Firebase Realtime</span>
+                    <span id="syncStatus" class="badge bg-success bg-opacity-75 small"><i class="fa-solid fa-wifi me-1"></i> Cloud Connected</span>
                     <button class="btn btn-sm btn-outline-light fw-bold rounded-2 px-2.5" onclick="prosesLogout()" title="Keluar">
                         <i class="fa-solid fa-power-off"></i> <span class="d-none d-sm-inline ms-1">Keluar</span>
                     </button>
@@ -387,7 +387,7 @@
                 <div id="guruTabLapor">
                     <div class="card card-custom p-3">
                         <h6 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-plus-circle me-2"></i>Form Pelaporan Sarpras</h6>
-                        <form id="formGuru" onsubmit="kirimLaporanGuru(event)">
+                        <form id="formGuru">
                             <div class="mb-2">
                                 <label class="form-label small fw-bold mb-1">Nama Guru</label>
                                 <input type="text" id="gNama" class="form-control form-control-sm rounded-2" required>
@@ -409,7 +409,7 @@
                                 <textarea id="gDeskripsi" class="form-control form-control-sm rounded-2" rows="3" required></textarea>
                             </div>
                             
-                            <!-- Foto Bukti Kerusakan (Kamera Langsung atau Pilih File) -->
+                            <!-- Foto Bukti Kerusakan -->
                             <div class="mb-3">
                                 <label class="form-label small fw-bold mb-1">Foto Bukti Kerusakan</label>
                                 <div class="d-flex gap-2 mb-2">
@@ -434,7 +434,7 @@
                                 <input type="hidden" id="gFotoData">
                             </div>
 
-                            <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold py-2 rounded-2">
+                            <button type="submit" id="btnSubmitGuru" class="btn btn-primary btn-sm w-100 fw-bold py-2 rounded-2">
                                 <i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan ke Sarpras
                             </button>
                         </form>
@@ -651,7 +651,7 @@
 
     </div>
 
-    <!-- Modal Kamera WebCam (Desktop/Laptop) -->
+    <!-- Modal Kamera WebCam -->
     <div class="modal fade" id="modalKamera" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered px-2">
             <div class="modal-content rounded-3 border-0 shadow">
@@ -732,92 +732,139 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        // Endpoint Firebase Realtime Cloud REST API
-        const FIREBASE_BASE_URL = "https://smpn3-besuki-sarpras-default-rtdb.firebaseio.com";
+    <!-- Firebase Realtime Database SDK (v10 JS Module) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        const initialLaporan = [];
-        const initialInventaris = [];
+        // ================= KONFIGURASI FIREBASE =================
+    const firebaseConfig = {
+    apiKey: "AIzaSyDXMjMf7cMDjkBr508R3yEs37Pn3DKjSLg",
+    authDomain: "gen-lang-client-0401099431.firebaseapp.com",
+    databaseURL: "https://gen-lang-client-0401099431-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "gen-lang-client-0401099431",
+    storageBucket: "gen-lang-client-0401099431.firebasestorage.app",
+    messagingSenderId: "94117890667",
+    appId: "1:94117890667:web:d73106296596dc94b33f2e",
+    measurementId: "G-M9HEDGQW02"
+  };
 
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const dbRefLaporan = ref(db, 'laporan');
+        const dbRefInventaris = ref(db, 'inventaris');
+
+        let storeLaporan = [];
+        let storeInventaris = [];
         let currentUser = null;
-        window.storeLaporan = [];
-        window.storeInventaris = [];
         let webcamStream = null;
-        let isSyncing = false;
-        
-        // Logo SVG Embedded (100% Permanen di Seluruh Perangkat/HP)
+
         const DEFAULT_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%232563eb' d='M256 32L32 128v64c0 141.4 96 264.8 224 288 128-23.2 224-146.6 224-288v-64L256 32z'/><path fill='%23ffffff' d='M256 128l-80 48v32l80-48 80 48v-32l-80-48zm-80 112v80h160v-80H176zm32 32h96v32h-96v-32z'/></svg>";
 
-        // SINKRONISASI PUSH DATA KE FIREBASE REALTIME DB
-        window.saveStorage = function() {
-            localStorage.setItem('smpn3_laporan_v7', JSON.stringify(window.storeLaporan));
-            localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(window.storeInventaris));
-            renderSemua();
-
-            // Kirim langsung ke Cloud Firebase
-            fetch(`${FIREBASE_BASE_URL}/laporan_v7.json`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(window.storeLaporan)
-            }).catch(err => console.log('Firebase Sync Warning: ', err));
-
-            fetch(`${FIREBASE_BASE_URL}/inventaris_v7.json`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(window.storeInventaris)
-            }).catch(err => console.log('Firebase Sync Warning: ', err));
-        };
-
-        // FETCH REALTIME PULL DATA DARI FIREBASE REALTIME DB
-        window.loadStorage = function() {
-            if (isSyncing) return;
-            isSyncing = true;
-
-            // Load Lokal Terlebih Dahulu
-            const localLaporan = localStorage.getItem('smpn3_laporan_v7');
-            const localInventaris = localStorage.getItem('smpn3_inventaris_v7');
-            if (localLaporan) window.storeLaporan = JSON.parse(localLaporan);
-            if (localInventaris) window.storeInventaris = JSON.parse(localInventaris);
-            renderSemua();
-
-            // Ambil update online dari Firebase
-            fetch(`${FIREBASE_BASE_URL}/.json`)
-                .then(res => res.json())
-                .then(data => {
-                    isSyncing = false;
-                    if (data) {
-                        if (data.laporan_v7) {
-                            const arrLaporan = Array.isArray(data.laporan_v7) ? data.laporan_v7 : Object.values(data.laporan_v7);
-                            window.storeLaporan = arrLaporan;
-                            localStorage.setItem('smpn3_laporan_v7', JSON.stringify(arrLaporan));
-                        }
-                        if (data.inventaris_v7) {
-                            const arrInventaris = Array.isArray(data.inventaris_v7) ? data.inventaris_v7 : Object.values(data.inventaris_v7);
-                            window.storeInventaris = arrInventaris;
-                            localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(arrInventaris));
-                        }
-                        if (data.logo_sekolah) {
-                            localStorage.setItem('smpn3_logo_sekolah', data.logo_sekolah);
-                            terapkanLogo(data.logo_sekolah);
-                        }
-                        renderSemua();
-                    }
-                })
-                .catch(err => {
-                    isSyncing = false;
-                    console.log('Firebase Load Offline: ', err);
+        // Realtime Database Listener
+        onValue(dbRefLaporan, (snapshot) => {
+            const data = snapshot.val();
+            storeLaporan = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    storeLaporan.push({ id: key, ...data[key] });
                 });
+                storeLaporan.reverse();
+            }
+            renderSemua();
+        });
+
+        onValue(dbRefInventaris, (snapshot) => {
+            const data = snapshot.val();
+            storeInventaris = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    storeInventaris.push({ id: key, ...data[key] });
+                });
+            }
+            renderSemua();
+        });
+
+        // Event Listener Form Kirim Laporan Guru
+        document.getElementById('formGuru').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fotoData = document.getElementById('gFotoData').value;
+            if (!fotoData) {
+                alert('Harap sertakan foto bukti kerusakan!');
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btnSubmitGuru');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengirim Laporan...';
+
+            const itemBaru = {
+                usernamePelapor: currentUser ? currentUser.username : 'guru',
+                pelapor: document.getElementById('gNama').value,
+                tanggal: document.getElementById('gTgl').value,
+                aset: document.getElementById('gAset').value,
+                lokasi: document.getElementById('gLokasi').value,
+                deskripsi: document.getElementById('gDeskripsi').value,
+                foto: fotoData,
+                tingkatKerusakan: "Belum Dievaluasi",
+                status: 'Menunggu Sarpras',
+                catatanSarpras: 'Laporan baru terkirim, menunggu pemeriksaan Sarpras.',
+                sumberAnggaran: "",
+                bulanPelaksanaan: "",
+                tahunPelaksanaan: "",
+                catatanAdmin: ""
+            };
+
+            const newPostRef = push(dbRefLaporan);
+            set(newPostRef, itemBaru).then(() => {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan ke Sarpras';
+                
+                document.getElementById('formGuru').reset();
+                window.resetFotoGuru();
+                if (currentUser) document.getElementById('gNama').value = currentUser.nama;
+                document.getElementById('gTgl').valueAsDate = new Date();
+                
+                alert('Laporan berhasil dikirim secara Online ke Bagian Sarpras!');
+                window.switchGuruTab('riwayat');
+            }).catch(err => {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan ke Sarpras';
+                alert('Gagal mengirim data ke database online: ' + err.message);
+            });
+        });
+
+        // KOMPRESI FOTO OTOMATIS SEBELUM DIKIRIM
+        window.prosesFotoGuru = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxW = 800;
+                    const scale = maxW / img.width;
+                    canvas.width = (img.width > maxW) ? maxW : img.width;
+                    canvas.height = (img.width > maxW) ? (img.height * scale) : img.height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                    setPreviewFotoGuru(compressedBase64);
+                };
+            };
+            reader.readAsDataURL(file);
         };
 
-        // SINKRONISASI OTOMATIS BERKALA DI LATAR BELAKANG (2.5 DETIK / INSTAN)
-        setInterval(() => {
-            if (currentUser) {
-                window.loadStorage();
-            }
-        }, 2500);
-
-        // ================= FOTO KAMERA LANGSUNG / FILE =================
-        function openCameraGuru() {
+        // Expose Fungsi Global untuk HTML Attributes
+        window.openCameraGuru = function() {
             if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
                 document.getElementById('gFotoCamera').click();
             } else {
@@ -827,45 +874,11 @@
                     document.getElementById('gFotoCamera').click();
                 }
             }
-        }
+        };
 
-        function openFileGuru() {
+        window.openFileGuru = function() {
             document.getElementById('gFotoFile').click();
-        }
-
-        function kompresiFoto(base64Str, maxWidth, quality, callback) {
-            const img = new Image();
-            img.src = base64Str;
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                callback(canvas.toDataURL('image/jpeg', quality));
-            };
-        }
-
-        function prosesFotoGuru(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                kompresiFoto(e.target.result, 600, 0.6, function(compressedBase64) {
-                    setPreviewFotoGuru(compressedBase64);
-                });
-            };
-            reader.readAsDataURL(file);
-        }
+        };
 
         function setPreviewFotoGuru(base64Data) {
             document.getElementById('gFotoData').value = base64Data;
@@ -873,13 +886,13 @@
             document.getElementById('previewFotoBox').classList.remove('d-none');
         }
 
-        function resetFotoGuru() {
+        window.resetFotoGuru = function() {
             document.getElementById('gFotoData').value = '';
             document.getElementById('gFotoFile').value = '';
             document.getElementById('gFotoCamera').value = '';
             document.getElementById('previewFotoImg').src = '';
             document.getElementById('previewFotoBox').classList.add('d-none');
-        }
+        };
 
         function bukaModalKamera() {
             const modalEl = document.getElementById('modalKamera');
@@ -889,17 +902,16 @@
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                 .then(function(stream) {
                     webcamStream = stream;
-                    const video = document.getElementById('webcamVideo');
-                    video.srcObject = stream;
+                    document.getElementById('webcamVideo').srcObject = stream;
                 })
                 .catch(function(err) {
-                    alert('Tidak dapat mengakses kamera: ' + err.message + '\nDialihkan ke pemilih file foto.');
+                    alert('Tidak dapat mengakses kamera: ' + err.message);
                     bootstrap.Modal.getInstance(modalEl).hide();
                     document.getElementById('gFotoFile').click();
                 });
         }
 
-        function tutupModalKamera() {
+        window.tutupModalKamera = function() {
             if (webcamStream) {
                 webcamStream.getTracks().forEach(track => track.stop());
                 webcamStream = null;
@@ -907,9 +919,9 @@
             const modalEl = document.getElementById('modalKamera');
             const instance = bootstrap.Modal.getInstance(modalEl);
             if (instance) instance.hide();
-        }
+        };
 
-        function jepretKamera() {
+        window.jepretKamera = function() {
             const video = document.getElementById('webcamVideo');
             const canvas = document.getElementById('webcamCanvas');
             canvas.width = video.videoWidth || 640;
@@ -918,37 +930,27 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const rawBase64 = canvas.toDataURL('image/jpeg', 0.85);
-            kompresiFoto(rawBase64, 600, 0.6, function(compressedBase64) {
-                setPreviewFotoGuru(compressedBase64);
-            });
-            tutupModalKamera();
-        }
+            setPreviewFotoGuru(canvas.toDataURL('image/jpeg', 0.6));
+            window.tutupModalKamera();
+        };
 
-        // ================= MANAJEMEN LOGO PERMANEN =================
-        function triggerUploadLogo() {
+        window.triggerUploadLogo = function() {
             document.getElementById('logoUploader').click();
-        }
+        };
 
-        function prosesGantiLogo(event) {
+        window.prosesGantiLogo = function(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                kompresiFoto(e.target.result, 200, 0.7, function(logoCompressed) {
-                    localStorage.setItem('smpn3_logo_sekolah', logoCompressed);
-                    fetch(`${FIREBASE_BASE_URL}/logo_sekolah.json`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(logoCompressed)
-                    });
-                    terapkanLogo(logoCompressed);
-                    alert('Logo sekolah berhasil diperbarui secara permanen di seluruh perangkat!');
-                });
+                const logoBase64 = e.target.result;
+                localStorage.setItem('smpn3_logo_sekolah', logoBase64);
+                terapkanLogo(logoBase64);
+                alert('Logo sekolah berhasil diperbarui secara permanen!');
             };
             reader.readAsDataURL(file);
-        }
+        };
 
         function terapkanLogo(urlLogo) {
             const logoUrl = urlLogo || localStorage.getItem('smpn3_logo_sekolah') || DEFAULT_LOGO;
@@ -958,12 +960,10 @@
             if (imgHeader) imgHeader.src = logoUrl;
         }
 
-        // ================= SESSION & INISIALISASI =================
         window.onload = function() {
             terapkanLogo();
             document.getElementById('gTgl').valueAsDate = new Date();
-            loadStorage();
-
+            
             const savedSession = sessionStorage.getItem('smpn3_user_session_v7');
             if (savedSession) {
                 currentUser = JSON.parse(savedSession);
@@ -971,8 +971,7 @@
             }
         };
 
-        // ================= LOGIN & LOGOUT (100% PASTI BISA) =================
-        function prosesLogin(e) {
+        window.prosesLogin = function(e) {
             e.preventDefault();
             const u = document.getElementById('loginUser').value.trim();
             const p = document.getElementById('loginPass').value.trim();
@@ -993,16 +992,16 @@
             alertBox.classList.add('d-none');
             sessionStorage.setItem('smpn3_user_session_v7', JSON.stringify(currentUser));
             bukaMainApp();
-        }
+        };
 
-        function prosesLogout() {
+        window.prosesLogout = function() {
             sessionStorage.removeItem('smpn3_user_session_v7');
             currentUser = null;
             document.getElementById('viewMainApp').classList.add('d-none');
             document.getElementById('viewLogin').classList.remove('d-none');
             document.getElementById('loginUser').value = '';
             document.getElementById('loginPass').value = '';
-        }
+        };
 
         function bukaMainApp() {
             document.getElementById('viewLogin').classList.add('d-none');
@@ -1013,25 +1012,24 @@
             document.getElementById('viewAdmin').classList.add('d-none');
             document.getElementById('mobileNavSarpras').classList.add('d-none');
 
-            // Pengaturan Label & Simbol Role Header
             const roleBadge = document.getElementById('userRoleBadge');
             if (currentUser.role === 'guru') {
                 roleBadge.innerHTML = '<i class="fa-solid fa-chalkboard-user"></i> Guru';
                 roleBadge.className = 'role-badge-custom role-badge-guru mt-0.5';
                 document.getElementById('viewGuru').classList.remove('d-none');
                 document.getElementById('gNama').value = currentUser.nama;
-                switchGuruTab('lapor');
+                window.switchGuruTab('lapor');
             } else if (currentUser.role === 'sarpras') {
                 roleBadge.innerHTML = '<i class="fa-solid fa-boxes-packing"></i> Sarpras';
                 roleBadge.className = 'role-badge-custom role-badge-sarpras mt-0.5';
                 document.getElementById('viewSarpras').classList.remove('d-none');
                 document.getElementById('mobileNavSarpras').classList.remove('d-none');
-                switchSarprasTab('overview');
+                window.switchSarprasTab('overview');
             } else if (currentUser.role === 'admin') {
                 roleBadge.innerHTML = '<i class="fa-solid fa-user-gear"></i> Admin';
                 roleBadge.className = 'role-badge-custom role-badge-admin mt-0.5';
                 document.getElementById('viewAdmin').classList.remove('d-none');
-                switchAdminTab('persetujuan');
+                window.switchAdminTab('persetujuan');
             }
 
             renderSemua();
@@ -1043,8 +1041,7 @@
             if (currentUser?.role === 'admin') renderAdminData();
         }
 
-        // ================= GURU LOGIC =================
-        function switchGuruTab(subTab) {
+        window.switchGuruTab = function(subTab) {
             if (subTab === 'lapor') {
                 document.getElementById('guruTabLapor').classList.remove('d-none');
                 document.getElementById('guruTabRiwayat').classList.add('d-none');
@@ -1056,51 +1053,13 @@
                 document.getElementById('btnTabGuruLapor').classList.remove('active');
                 document.getElementById('btnTabGuruRiwayat').classList.add('active');
             }
-        }
-
-        function kirimLaporanGuru(e) {
-            e.preventDefault();
-            const fotoData = document.getElementById('gFotoData').value;
-            if (!fotoData) {
-                alert('Harap sertakan foto bukti kerusakan!');
-                return;
-            }
-
-            const itemBaru = {
-                id: "LAP-" + Date.now(),
-                usernamePelapor: currentUser.username,
-                pelapor: document.getElementById('gNama').value,
-                tanggal: document.getElementById('gTgl').value,
-                aset: document.getElementById('gAset').value,
-                lokasi: document.getElementById('gLokasi').value,
-                deskripsi: document.getElementById('gDeskripsi').value,
-                foto: fotoData,
-                tingkatKerusakan: "Belum Dievaluasi",
-                status: 'Menunggu Sarpras',
-                catatanSarpras: 'Laporan baru terkirim, menunggu pemeriksaan Sarpras.',
-                sumberAnggaran: "",
-                bulanPelaksanaan: "",
-                tahunPelaksanaan: "",
-                catatanAdmin: ""
-            };
-
-            window.storeLaporan.unshift(itemBaru);
-            window.saveStorage();
-            
-            document.getElementById('formGuru').reset();
-            resetFotoGuru();
-            document.getElementById('gNama').value = currentUser.nama;
-            document.getElementById('gTgl').valueAsDate = new Date();
-            
-            alert('Laporan berhasil dikirim ke Bagian Sarpras!');
-            switchGuruTab('riwayat');
-        }
+        };
 
         function renderGuruData() {
             const container = document.getElementById('listLaporanGuru');
             container.innerHTML = '';
             
-            const myLaporan = window.storeLaporan.filter(x => x.usernamePelapor === currentUser.username || !x.usernamePelapor);
+            const myLaporan = storeLaporan.filter(x => x.usernamePelapor === currentUser.username || !x.usernamePelapor);
             document.getElementById('totalLaporanGuru').innerText = `${myLaporan.length} Laporan`;
 
             if (myLaporan.length === 0) {
@@ -1189,8 +1148,7 @@
             });
         }
 
-        // ================= SARPRAS LOGIC =================
-        function switchSarprasTab(tabName) {
+        window.switchSarprasTab = function(tabName) {
             document.getElementById('sTabOverview').classList.add('d-none');
             document.getElementById('sTabEvaluasi').classList.add('d-none');
             document.getElementById('sTabProses').classList.add('d-none');
@@ -1223,22 +1181,19 @@
                 document.getElementById('tabNavSInventaris')?.classList.add('active');
                 document.getElementById('mNavInventaris')?.classList.add('active');
             }
-        }
+        };
 
-        function renderSarprasData() {
+        window.renderSarprasData = function() {
             const thn = document.getElementById('filterTahunSarpras').value;
-
-            const laporanFiltered = window.storeLaporan.filter(x => thn === 'SEMUA' || (x.tanggal || '').startsWith(thn));
+            const laporanFiltered = storeLaporan.filter(x => thn === 'SEMUA' || (x.tanggal || '').startsWith(thn));
 
             document.getElementById('sStatTotal').innerText = laporanFiltered.length;
             document.getElementById('sStatEvaluasi').innerText = laporanFiltered.filter(x => x.status === 'Menunggu Sarpras').length;
             document.getElementById('sStatAtAdmin').innerText = laporanFiltered.filter(x => x.status === 'Menunggu Verifikasi Admin').length;
             document.getElementById('sStatSelesai').innerText = laporanFiltered.filter(x => x.status === 'Selesai' || x.status.includes('Disetujui')).length;
 
-            // 1. Evaluasi Laporan Masuk
             const cEvaluasi = document.getElementById('containerSarprasEvaluasi');
             cEvaluasi.innerHTML = '';
-
             const listEvaluasi = laporanFiltered.filter(x => x.status === 'Menunggu Sarpras');
             if (listEvaluasi.length === 0) {
                 cEvaluasi.innerHTML = `<div class="card card-custom p-3 text-center text-muted small">Tidak ada laporan baru yang perlu dievaluasi.</div>`;
@@ -1250,30 +1205,15 @@
                                 <h6 class="fw-bold text-dark mb-0">${escapeHtml(item.aset)}</h6>
                                 <span class="badge bg-danger">Menunggu Evaluasi</span>
                             </div>
-                            
                             <table class="detail-table mb-2">
-                                <tr>
-                                    <td class="lbl">Pelapor</td>
-                                    <td class="col">:</td>
-                                    <td class="val"><strong>${escapeHtml(item.pelapor)}</strong></td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">Lokasi Detail</td>
-                                    <td class="col">:</td>
-                                    <td class="val">${escapeHtml(item.lokasi)}</td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">Tanggal Lapor</td>
-                                    <td class="col">:</td>
-                                    <td class="val">${item.tanggal}</td>
-                                </tr>
+                                <tr><td class="lbl">Pelapor</td><td class="col">:</td><td class="val"><strong>${escapeHtml(item.pelapor)}</strong></td></tr>
+                                <tr><td class="lbl">Lokasi Detail</td><td class="col">:</td><td class="val">${escapeHtml(item.lokasi)}</td></tr>
+                                <tr><td class="lbl">Tanggal Lapor</td><td class="col">:</td><td class="val">${item.tanggal}</td></tr>
                             </table>
-
                             <div class="d-flex gap-2 my-2">
                                 <img src="${item.foto}" class="img-thumb-mobile">
                                 <small class="text-secondary">${escapeHtml(item.deskripsi)}</small>
                             </div>
-
                             <div class="bg-light p-2 rounded mt-2 border">
                                 <div class="row g-2">
                                     <div class="col-md-4">
@@ -1298,10 +1238,8 @@
                 });
             }
 
-            // 2. Proses Perbaikan
             const cProses = document.getElementById('containerSarprasProses');
             cProses.innerHTML = '';
-
             const listProses = laporanFiltered.filter(x => x.status !== 'Menunggu Sarpras');
             if (listProses.length === 0) {
                 cProses.innerHTML = `<div class="card card-custom p-3 text-center text-muted small">Belum ada laporan dalam tahap verifikasi/proses.</div>`;
@@ -1313,42 +1251,16 @@
                                 <h6 class="fw-bold mb-0">${escapeHtml(item.aset)}</h6>
                                 <span class="badge ${item.status === 'Selesai' ? 'bg-success' : 'bg-primary'}">${item.status}</span>
                             </div>
-
                             <div class="bg-light p-2 rounded mb-2">
                                 <table class="detail-table">
-                                    <tr>
-                                        <td class="lbl">Pelapor</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${escapeHtml(item.pelapor)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Lokasi Detail</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${escapeHtml(item.lokasi)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Tingkat Kerusakan</td>
-                                        <td class="col">:</td>
-                                        <td class="val"><span class="badge bg-secondary">${item.tingkatKerusakan}</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Sumber Anggaran</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${item.sumberAnggaran || 'Menunggu keputusan Admin'}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Jadwal Pelaksanaan</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${item.bulanPelaksanaan && item.tahunPelaksanaan ? `${item.bulanPelaksanaan}${item.tahunPelaksanaan}` : 'Menunggu keputusan Admin'}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Catatan Admin</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${escapeHtml(item.catatanAdmin || '-')}</td>
-                                    </tr>
+                                    <tr><td class="lbl">Pelapor</td><td class="col">:</td><td class="val">${escapeHtml(item.pelapor)}</td></tr>
+                                    <tr><td class="lbl">Lokasi Detail</td><td class="col">:</td><td class="val">${escapeHtml(item.lokasi)}</td></tr>
+                                    <tr><td class="lbl">Tingkat Kerusakan</td><td class="col">:</td><td class="val"><span class="badge bg-secondary">${item.tingkatKerusakan}</span></td></tr>
+                                    <tr><td class="lbl">Sumber Anggaran</td><td class="col">:</td><td class="val">${item.sumberAnggaran || 'Menunggu keputusan Admin'}</td></tr>
+                                    <tr><td class="lbl">Jadwal Pelaksanaan</td><td class="col">:</td><td class="val">${item.bulanPelaksanaan && item.tahunPelaksanaan ? `${item.bulanPelaksanaan}${item.tahunPelaksanaan}` : 'Menunggu keputusan Admin'}</td></tr>
+                                    <tr><td class="lbl">Catatan Admin</td><td class="col">:</td><td class="val">${escapeHtml(item.catatanAdmin || '-')}</td></tr>
                                 </table>
                             </div>
-
                             <div class="row g-2 align-items-center">
                                 <div class="col-6 col-md-4">
                                     <select class="form-select form-select-sm rounded-2" onchange="updateStatusSarpras('${item.id}', this.value)">
@@ -1366,11 +1278,9 @@
                 });
             }
 
-            // 3. Inventaris
             const tbodyInv = document.getElementById('tabelInventaris');
             tbodyInv.innerHTML = '';
-            const filteredInv = window.storeInventaris.filter(x => thn === 'SEMUA' || x.tahun == thn);
-
+            const filteredInv = storeInventaris.filter(x => thn === 'SEMUA' || x.tahun == thn);
             if (filteredInv.length === 0) {
                 tbodyInv.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Belum ada data inventaris.</td></tr>`;
             } else {
@@ -1390,41 +1300,36 @@
                     `;
                 });
             }
-        }
+        };
 
-        function kirimKeAdmin(id) {
+        window.kirimKeAdmin = function(id) {
             const tk = document.getElementById(`tk-${id}`).value;
             const cat = document.getElementById(`cat-${id}`).value;
-
-            const idx = window.storeLaporan.findIndex(x => x.id === id);
-            if (idx !== -1) {
-                window.storeLaporan[idx].tingkatKerusakan = tk;
-                window.storeLaporan[idx].catatanSarpras = cat || `Laporan telah dievaluasi dengan tingkat kerusakan: ${tk}.`;
-                window.storeLaporan[idx].status = "Menunggu Verifikasi Admin";
-                window.saveStorage();
+            const itemRef = ref(db, `laporan/${id}`);
+            update(itemRef, {
+                tingkatKerusakan: tk,
+                catatanSarpras: cat || `Laporan telah dievaluasi dengan tingkat kerusakan: ${tk}.`,
+                status: "Menunggu Verifikasi Admin"
+            }).then(() => {
                 alert('Laporan dikirim ke Admin / Tim BOS untuk verifikasi!');
-            }
-        }
+            });
+        };
 
-        function updateStatusSarpras(id, statusVal) {
-            const idx = window.storeLaporan.findIndex(x => x.id === id);
-            if (idx !== -1) {
-                window.storeLaporan[idx].status = statusVal;
-                window.saveStorage();
-            }
-        }
+        window.updateStatusSarpras = function(id, statusVal) {
+            const itemRef = ref(db, `laporan/${id}`);
+            update(itemRef, { status: statusVal });
+        };
 
-        function hapusLaporan(id) {
+        window.hapusLaporan = function(id) {
             if (confirm('Hapus laporan ini?')) {
-                window.storeLaporan = window.storeLaporan.filter(x => x.id !== id);
-                window.saveStorage();
+                const itemRef = ref(db, `laporan/${id}`);
+                remove(itemRef);
             }
-        }
+        };
 
-        function simpanInventaris(e) {
+        window.simpanInventaris = function(e) {
             e.preventDefault();
             const item = {
-                id: "INV-" + Date.now(),
                 kode: document.getElementById('iKode').value,
                 nama: document.getElementById('iNama').value,
                 kategori: document.getElementById('iKategori').value,
@@ -1434,24 +1339,23 @@
                 kondisi: document.getElementById('iKondisi').value
             };
 
-            window.storeInventaris.push(item);
-            window.saveStorage();
+            const newInvRef = push(dbRefInventaris);
+            set(newInvRef, item).then(() => {
+                const modalEl = document.getElementById('modalTambahInv');
+                bootstrap.Modal.getInstance(modalEl).hide();
+                document.getElementById('formInv').reset();
+                alert('Inventaris baru tersimpan!');
+            });
+        };
 
-            const modalEl = document.getElementById('modalTambahInv');
-            bootstrap.Modal.getInstance(modalEl).hide();
-            document.getElementById('formInv').reset();
-            alert('Inventaris baru tersimpan!');
-        }
-
-        function hapusInventaris(id) {
+        window.hapusInventaris = function(id) {
             if (confirm('Hapus aset inventaris ini?')) {
-                window.storeInventaris = window.storeInventaris.filter(x => x.id !== id);
-                window.saveStorage();
+                const itemRef = ref(db, `inventaris/${id}`);
+                remove(itemRef);
             }
-        }
+        };
 
-        // ================= ADMIN LOGIC =================
-        function switchAdminTab(tabName) {
+        window.switchAdminTab = function(tabName) {
             if (tabName === 'persetujuan') {
                 document.getElementById('adminTabPersetujuan').classList.remove('d-none');
                 document.getElementById('adminTabRekap').classList.add('d-none');
@@ -1463,13 +1367,12 @@
                 document.getElementById('btnTabAdminPersetujuan').classList.remove('active');
                 document.getElementById('btnTabAdminRekap').classList.add('active');
             }
-        }
+        };
 
         function renderAdminData() {
             const container = document.getElementById('containerAdminVerifikasi');
             container.innerHTML = '';
-
-            const listPending = window.storeLaporan.filter(x => x.status === 'Menunggu Verifikasi Admin');
+            const listPending = storeLaporan.filter(x => x.status === 'Menunggu Verifikasi Admin');
 
             if (listPending.length === 0) {
                 container.innerHTML = `<div class="card card-custom p-3 text-center text-muted small">Tidak ada laporan yang menunggu verifikasi anggaran Admin.</div>`;
@@ -1482,37 +1385,15 @@
                                 <h6 class="fw-bold mb-0 text-primary">${escapeHtml(item.aset)}</h6>
                                 <span class="badge ${isBerat ? 'bg-danger' : 'bg-warning text-dark'}">Kerusakan: ${item.tingkatKerusakan}</span>
                             </div>
-
                             <div class="bg-light p-2 rounded mb-2">
                                 <table class="detail-table">
-                                    <tr>
-                                        <td class="lbl">Pelapor</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${escapeHtml(item.pelapor)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Lokasi Detail</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${escapeHtml(item.lokasi)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Tanggal Lapor</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${item.tanggal}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Deskripsi Kerusakan</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${escapeHtml(item.deskripsi)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="lbl">Rekomendasi Sarpras</td>
-                                        <td class="col">:</td>
-                                        <td class="val">${escapeHtml(item.catatanSarpras)}</td>
-                                    </tr>
+                                    <tr><td class="lbl">Pelapor</td><td class="col">:</td><td class="val">${escapeHtml(item.pelapor)}</td></tr>
+                                    <tr><td class="lbl">Lokasi Detail</td><td class="col">:</td><td class="val">${escapeHtml(item.lokasi)}</td></tr>
+                                    <tr><td class="lbl">Tanggal Lapor</td><td class="col">:</td><td class="val">${item.tanggal}</td></tr>
+                                    <tr><td class="lbl">Deskripsi Kerusakan</td><td class="col">:</td><td class="val">${escapeHtml(item.deskripsi)}</td></tr>
+                                    <tr><td class="lbl">Rekomendasi Sarpras</td><td class="col">:</td><td class="val">${escapeHtml(item.catatanSarpras)}</td></tr>
                                 </table>
                             </div>
-                            
                             <div class="p-2 p-sm-3 bg-white border rounded-3">
                                 <h6 class="fw-bold mb-2 text-dark small"><i class="fa-solid fa-file-signature me-1"></i>Form Persetujuan Anggaran Admin / Tim BOS:</h6>
                                 <div class="row g-2">
@@ -1563,11 +1444,9 @@
                 });
             }
 
-            // Rekap Admin
             const tbody = document.getElementById('tabelRekapAdmin');
             tbody.innerHTML = '';
-
-            window.storeLaporan.forEach(item => {
+            storeLaporan.forEach(item => {
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-nowrap">${item.tanggal}</td>
@@ -1584,23 +1463,23 @@
             });
         }
 
-        function prosesVerifikasiAdmin(id) {
+        window.prosesVerifikasiAdmin = function(id) {
             const angg = document.getElementById(`admAnggaran-${id}`).value;
             const bln = document.getElementById(`admBulan-${id}`).value;
             const thn = document.getElementById(`admTahun-${id}`).value;
             const cat = document.getElementById(`admCatatan-${id}`).value;
 
-            const idx = window.storeLaporan.findIndex(x => x.id === id);
-            if (idx !== -1) {
-                window.storeLaporan[idx].sumberAnggaran = angg;
-                window.storeLaporan[idx].bulanPelaksanaan = bln;
-                window.storeLaporan[idx].tahunPelaksanaan = thn;
-                window.storeLaporan[idx].catatanAdmin = cat;
-                window.storeLaporan[idx].status = "Disetujui Admin - Menunggu Pengerjaan";
-                window.saveStorage();
+            const itemRef = ref(db, `laporan/${id}`);
+            update(itemRef, {
+                sumberAnggaran: angg,
+                bulanPelaksanaan: bln,
+                tahunPelaksanaan: thn,
+                catatanAdmin: cat,
+                status: "Disetujui Admin - Menunggu Pengerjaan"
+            }).then(() => {
                 alert('Laporan berhasil diverifikasi dan dikirim kembali ke Sarpras!');
-            }
-        }
+            });
+        };
 
         function escapeHtml(text) {
             if (!text) return '';
