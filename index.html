@@ -732,17 +732,87 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Konfigurasi Project Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyYOUR_API_KEY_HERE",
+            authDomain: "smpn3besuki-sarpras.firebaseapp.com",
+            databaseURL: "https://smpn3besuki-sarpras-default-rtdb.firebaseio.com",
+            projectId: "smpn3besuki-sarpras",
+            storageBucket: "smpn3besuki-sarpras.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Sinkronisasi Laporan Realtime secara Online
+        window.saveStorage = function() {
+            set(ref(db, 'laporan_v7'), window.storeLaporan);
+            set(ref(db, 'inventaris_v7'), window.storeInventaris);
+            localStorage.setItem('smpn3_laporan_v7', JSON.stringify(window.storeLaporan));
+            localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(window.storeInventaris));
+            window.renderSemua();
+        };
+
+        window.loadStorage = function() {
+            onValue(ref(db, 'laporan_v7'), (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.storeLaporan = data;
+                    localStorage.setItem('smpn3_laporan_v7', JSON.stringify(data));
+                    window.renderSemua();
+                }
+            });
+
+            onValue(ref(db, 'inventaris_v7'), (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.storeInventaris = data;
+                    localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(data));
+                    window.renderSemua();
+                }
+            });
+
+            onValue(ref(db, 'logo_sekolah'), (snapshot) => {
+                const logo = snapshot.val();
+                if (logo) {
+                    localStorage.setItem('smpn3_logo_sekolah', logo);
+                    window.terapkanLogo(logo);
+                }
+            });
+        };
+
+        window.simpanLogoOnline = function(base64Logo) {
+            set(ref(db, 'logo_sekolah'), base64Logo);
+        };
+    </script>
+
     <script>
         const initialLaporan = [];
         const initialInventaris = [];
 
         let currentUser = null;
-        let storeLaporan = [];
-        let storeInventaris = [];
+        window.storeLaporan = [];
+        window.storeInventaris = [];
         let webcamStream = null;
         
         // Logo SVG Embedded (100% Permanen di Seluruh Perangkat/HP tanpa ketergantungan link luar)
         const DEFAULT_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%232563eb' d='M256 32L32 128v64c0 141.4 96 264.8 224 288 128-23.2 224-146.6 224-288v-64L256 32z'/><path fill='%23ffffff' d='M256 128l-80 48v32l80-48 80 48v-32l-80-48zm-80 112v80h160v-80H176zm32 32h96v32h-96v-32z'/></svg>";
+
+        // Fallback simpan jika offline
+        if (typeof window.saveStorage !== 'function') {
+            window.saveStorage = function() {
+                localStorage.setItem('smpn3_laporan_v7', JSON.stringify(window.storeLaporan));
+                localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(window.storeInventaris));
+                renderSemua();
+            };
+        }
 
         // ================= FOTO KAMERA LANGSUNG / FILE =================
         function openCameraGuru() {
@@ -841,6 +911,9 @@
             reader.onload = function(e) {
                 const logoBase64 = e.target.result;
                 localStorage.setItem('smpn3_logo_sekolah', logoBase64);
+                if (typeof window.simpanLogoOnline === 'function') {
+                    window.simpanLogoOnline(logoBase64);
+                }
                 terapkanLogo(logoBase64);
                 alert('Logo sekolah berhasil diperbarui secara permanen!');
             };
@@ -856,25 +929,14 @@
         }
 
         // ================= STORAGE & SESSION =================
-        function loadStorage() {
-            storeLaporan = JSON.parse(localStorage.getItem('smpn3_laporan_v7')) || initialLaporan;
-            storeInventaris = JSON.parse(localStorage.getItem('smpn3_inventaris_v7')) || initialInventaris;
-        }
-
-        function saveStorage() {
-            localStorage.setItem('smpn3_laporan_v7', JSON.stringify(storeLaporan));
-            localStorage.setItem('smpn3_inventaris_v7', JSON.stringify(storeInventaris));
-            renderSemua();
-        }
-
         window.addEventListener('storage', function() {
-            loadStorage();
+            if (typeof window.loadStorage === 'function') window.loadStorage();
             terapkanLogo();
             renderSemua();
         });
 
         window.onload = function() {
-            loadStorage();
+            if (typeof window.loadStorage === 'function') window.loadStorage();
             terapkanLogo();
             document.getElementById('gTgl').valueAsDate = new Date();
             
@@ -998,8 +1060,8 @@
                 catatanAdmin: ""
             };
 
-            storeLaporan.unshift(itemBaru);
-            saveStorage();
+            window.storeLaporan.unshift(itemBaru);
+            window.saveStorage();
             
             document.getElementById('formGuru').reset();
             resetFotoGuru();
@@ -1014,7 +1076,7 @@
             const container = document.getElementById('listLaporanGuru');
             container.innerHTML = '';
             
-            const myLaporan = storeLaporan.filter(x => x.usernamePelapor === currentUser.username || !x.usernamePelapor);
+            const myLaporan = window.storeLaporan.filter(x => x.usernamePelapor === currentUser.username || !x.usernamePelapor);
             document.getElementById('totalLaporanGuru').innerText = `${myLaporan.length} Laporan`;
 
             if (myLaporan.length === 0) {
@@ -1142,7 +1204,7 @@
         function renderSarprasData() {
             const thn = document.getElementById('filterTahunSarpras').value;
 
-            const laporanFiltered = storeLaporan.filter(x => thn === 'SEMUA' || (x.tanggal || '').startsWith(thn));
+            const laporanFiltered = window.storeLaporan.filter(x => thn === 'SEMUA' || (x.tanggal || '').startsWith(thn));
 
             document.getElementById('sStatTotal').innerText = laporanFiltered.length;
             document.getElementById('sStatEvaluasi').innerText = laporanFiltered.filter(x => x.status === 'Menunggu Sarpras').length;
@@ -1283,7 +1345,7 @@
             // 3. Inventaris
             const tbodyInv = document.getElementById('tabelInventaris');
             tbodyInv.innerHTML = '';
-            const filteredInv = storeInventaris.filter(x => thn === 'SEMUA' || x.tahun == thn);
+            const filteredInv = window.storeInventaris.filter(x => thn === 'SEMUA' || x.tahun == thn);
 
             if (filteredInv.length === 0) {
                 tbodyInv.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Belum ada data inventaris.</td></tr>`;
@@ -1310,28 +1372,28 @@
             const tk = document.getElementById(`tk-${id}`).value;
             const cat = document.getElementById(`cat-${id}`).value;
 
-            const idx = storeLaporan.findIndex(x => x.id === id);
+            const idx = window.storeLaporan.findIndex(x => x.id === id);
             if (idx !== -1) {
-                storeLaporan[idx].tingkatKerusakan = tk;
-                storeLaporan[idx].catatanSarpras = cat || `Laporan telah dievaluasi dengan tingkat kerusakan: ${tk}.`;
-                storeLaporan[idx].status = "Menunggu Verifikasi Admin";
-                saveStorage();
+                window.storeLaporan[idx].tingkatKerusakan = tk;
+                window.storeLaporan[idx].catatanSarpras = cat || `Laporan telah dievaluasi dengan tingkat kerusakan: ${tk}.`;
+                window.storeLaporan[idx].status = "Menunggu Verifikasi Admin";
+                window.saveStorage();
                 alert('Laporan dikirim ke Admin / Tim BOS untuk verifikasi!');
             }
         }
 
         function updateStatusSarpras(id, statusVal) {
-            const idx = storeLaporan.findIndex(x => x.id === id);
+            const idx = window.storeLaporan.findIndex(x => x.id === id);
             if (idx !== -1) {
-                storeLaporan[idx].status = statusVal;
-                saveStorage();
+                window.storeLaporan[idx].status = statusVal;
+                window.saveStorage();
             }
         }
 
         function hapusLaporan(id) {
             if (confirm('Hapus laporan ini?')) {
-                storeLaporan = storeLaporan.filter(x => x.id !== id);
-                saveStorage();
+                window.storeLaporan = window.storeLaporan.filter(x => x.id !== id);
+                window.saveStorage();
             }
         }
 
@@ -1348,8 +1410,8 @@
                 kondisi: document.getElementById('iKondisi').value
             };
 
-            storeInventaris.push(item);
-            saveStorage();
+            window.storeInventaris.push(item);
+            window.saveStorage();
 
             const modalEl = document.getElementById('modalTambahInv');
             bootstrap.Modal.getInstance(modalEl).hide();
@@ -1359,8 +1421,8 @@
 
         function hapusInventaris(id) {
             if (confirm('Hapus aset inventaris ini?')) {
-                storeInventaris = storeInventaris.filter(x => x.id !== id);
-                saveStorage();
+                window.storeInventaris = window.storeInventaris.filter(x => x.id !== id);
+                window.saveStorage();
             }
         }
 
@@ -1383,7 +1445,7 @@
             const container = document.getElementById('containerAdminVerifikasi');
             container.innerHTML = '';
 
-            const listPending = storeLaporan.filter(x => x.status === 'Menunggu Verifikasi Admin');
+            const listPending = window.storeLaporan.filter(x => x.status === 'Menunggu Verifikasi Admin');
 
             if (listPending.length === 0) {
                 container.innerHTML = `<div class="card card-custom p-3 text-center text-muted small">Tidak ada laporan yang menunggu verifikasi anggaran Admin.</div>`;
@@ -1481,7 +1543,7 @@
             const tbody = document.getElementById('tabelRekapAdmin');
             tbody.innerHTML = '';
 
-            storeLaporan.forEach(item => {
+            window.storeLaporan.forEach(item => {
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-nowrap">${item.tanggal}</td>
@@ -1504,14 +1566,14 @@
             const thn = document.getElementById(`admTahun-${id}`).value;
             const cat = document.getElementById(`admCatatan-${id}`).value;
 
-            const idx = storeLaporan.findIndex(x => x.id === id);
+            const idx = window.storeLaporan.findIndex(x => x.id === id);
             if (idx !== -1) {
-                storeLaporan[idx].sumberAnggaran = angg;
-                storeLaporan[idx].bulanPelaksanaan = bln;
-                storeLaporan[idx].tahunPelaksanaan = thn;
-                storeLaporan[idx].catatanAdmin = cat;
-                storeLaporan[idx].status = "Disetujui Admin - Menunggu Pengerjaan";
-                saveStorage();
+                window.storeLaporan[idx].sumberAnggaran = angg;
+                window.storeLaporan[idx].bulanPelaksanaan = bln;
+                window.storeLaporan[idx].tahunPelaksanaan = thn;
+                window.storeLaporan[idx].catatanAdmin = cat;
+                window.storeLaporan[idx].status = "Disetujui Admin - Menunggu Pengerjaan";
+                window.saveStorage();
                 alert('Laporan berhasil diverifikasi dan dikirim kembali ke Sarpras!');
             }
         }
